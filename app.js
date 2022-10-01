@@ -10,9 +10,7 @@ app.use(express.json());
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
-
-// Get all the tours
-app.get("/api/v1/tours", (req, res) => {
+const getAllTours = (req, res) => {
   // Sending JSON back and format it according to Jsend specification
   // Additionally adding results key which holds the length of the tours array as an extra
   res.status(200).json({
@@ -20,10 +18,8 @@ app.get("/api/v1/tours", (req, res) => {
     results: tours.length,
     data: { tours },
   });
-});
-
-//Get a single tour
-app.get("/api/v1/tours/:id", (req, res) => {
+};
+const getTour = (req, res) => {
   const tour = tours.find((tour) => tour.id === +req.params.id);
 
   if (!tour) {
@@ -37,10 +33,8 @@ app.get("/api/v1/tours/:id", (req, res) => {
     status: "success",
     data: tour,
   });
-});
-
-// Create a new tour
-app.post("/api/v1/tours", (req, res) => {
+};
+const createTour = (req, res) => {
   const newId = tours[tours.length - 1].id + 1;
   const newTour = Object.assign({ id: newId }, req.body);
 
@@ -57,10 +51,9 @@ app.post("/api/v1/tours", (req, res) => {
       });
     }
   );
-});
+};
 
-// Patch a existing tour
-app.patch("/api/v1/tours/:id", (req, res) => {
+const updateTour = (req, res) => {
   if (+req.params.id > tours.length) {
     return res.status(404).json({
       status: "fail",
@@ -74,10 +67,9 @@ app.patch("/api/v1/tours/:id", (req, res) => {
       tour: "<Updated tour here>",
     },
   });
-});
+};
 
-// Delete a tour
-app.delete("/api/v1/tours/:id", (req, res) => {
+const deleteTour = (req, res) => {
   if (+req.params.id > tours.length) {
     return res.status(404).json({
       status: "fail",
@@ -90,7 +82,11 @@ app.delete("/api/v1/tours/:id", (req, res) => {
     status: "success",
     data: null,
   });
-});
+};
+
+app.route("api/v1/tours").get(getAllTours).post(createTour);
+
+app.route("api/v1/tours/:id").get(getTour).patch(updateTour).delete(deleteTour);
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log("Listening on port " + port));
