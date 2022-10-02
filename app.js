@@ -23,6 +23,4 @@ app.use((req, res, next) => {
 app.use("/api/v1/tours", tourRouter);
 app.use("/api/v1/users", userRouter);
 
-//// 3) START SERVER
-const port = process.env.PORT || 5000;
-app.listen(port, () => console.log("Listening on port " + port));
+module.exports = app;

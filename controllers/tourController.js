@@ -4,6 +4,29 @@ const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
 );
 
+// Param Middleware: val holds the value of the id parameter
+// Helps get rid of repeated check if the id is valid
+exports.checkID = (req, res, next, val) => {
+  const tour = tours.find((tour) => tour.id === +req.params.id);
+
+  if (!tour) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Invalid ID",
+    });
+  }
+  next();
+};
+exports.checkBody = (req, res, next) => {
+  if (!req.body.name || !req.body.price) {
+    return res.status(400).json({
+      status: "fail",
+      message: "Missing name or price",
+    });
+  }
+  next();
+};
+
 exports.getAllTours = (req, res) => {
   // Sending JSON back and format it according to Jsend specification
   // Additionally adding results key which holds the length of the tours array as an extra
@@ -16,13 +39,6 @@ exports.getAllTours = (req, res) => {
 };
 exports.getTour = (req, res) => {
   const tour = tours.find((tour) => tour.id === +req.params.id);
-
-  if (!tour) {
-    return res.status(404).json({
-      status: "fail",
-      message: "Invalid ID",
-    });
-  }
 
   res.status(200).json({
     status: "success",
@@ -49,13 +65,6 @@ exports.createTour = (req, res) => {
 };
 
 exports.updateTour = (req, res) => {
-  if (+req.params.id > tours.length) {
-    return res.status(404).json({
-      status: "fail",
-      message: "Invalid ID",
-    });
-  }
-
   res.status(200).json({
     status: "success",
     data: {
@@ -65,13 +74,6 @@ exports.updateTour = (req, res) => {
 };
 
 exports.deleteTour = (req, res) => {
-  if (+req.params.id > tours.length) {
-    return res.status(404).json({
-      status: "fail",
-      message: "Invalid ID",
-    });
-  }
-
   // 204 stands for no content
   res.status(204).json({
     status: "success",
