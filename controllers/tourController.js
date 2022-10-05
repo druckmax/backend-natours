@@ -2,6 +2,7 @@ const Tour = require('../models/tourModel');
 
 exports.getAllTours = async (req, res) => {
   try {
+    // 1) Filtering
     // Added argument for query search, classic mongoDB way
     // const tours = await Tour.find({
     //   duration: 5,
@@ -19,15 +20,34 @@ exports.getAllTours = async (req, res) => {
     // First we need to create a shallow copy of req.query because we want only certain queries to take effect (for example we do not want the pagination query (?page=2) for our filter)
     // We create an array of all the fields we want to exclude from the query object
     // We remove all the fields we do not want from the shallow copy of req.query with a forEach loop
-    // Now we can use the queryObject in the find method to get the tours filtered for the specified queries
-    // Find will return a query object which allows to append other methods right to it like sort() or where().
-    // But as soon as we are using await in our find method, which returns the query object, the query will execute and come back with the documents that match the query, which makes it impossible for us to later implement sorting or pagination methods by appending them. Instead we need to save the query as an actual query without the await and then await this query in a separate line of code.
 
     const queryObj = { ...req.query };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
-    const query = Tour.find(queryObj);
+    // 2.) Advanced Filtering
+    /* In order to implement avanced filtering, including greater than or less than for example, a standard way of adding that information in the query is to put the mongoDB operators in square brackets:
+
+    /tours?duration[gte]=5
+
+    The returend query object looks almost identical to how we would put the argument in the find method in mongoDB, except for the missing $ sign:
+
+    MongoDB : {duration: {$gte: 5} }
+    queryObject : {duration: {gte: 5} }
+
+    In order to add the missing sign for the mongo operator, we can parse the queryObject as a string with JSON.sringify and then use the replace method in combination with a regular expression to append the $ sign to all operators we want to use. The replace method offers a callback function of which the first argument is the matched string. Using a template literal we can now append the $ sign to the match.
+    */
+
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    console.log(JSON.parse(queryStr));
+
+    // Now we can use the queryObject in the find method to get the tours filtered for the specified queries
+    // Find will return a query object which allows to append other methods right to it like sort() or where().
+    // But as soon as we are using await in our find method, which returns the query object, the query will execute and come back with the documents that match the query, which makes it impossible for us to later implement sorting or pagination methods by appending them. Instead we need to save the query as an actual query without the await and then await this query in a separate line of code.
+    // const query = Tour.find(queryObj);
+    // If we want to use advanced filtering we parse the queryString as JSON and pass it to the find method instead of just the query object
+    const query = Tour.find(JSON.parse(queryStr));
     const tours = await query;
 
     // Sending JSON back and format it according to Jsend specification
