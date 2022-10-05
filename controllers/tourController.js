@@ -2,7 +2,7 @@ const Tour = require('../models/tourModel');
 
 exports.getAllTours = async (req, res) => {
   try {
-    // 1) Filtering
+    // 1a) FILTERING
     // Added argument for query search, classic mongoDB way
     // const tours = await Tour.find({
     //   duration: 5,
@@ -25,7 +25,7 @@ exports.getAllTours = async (req, res) => {
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
-    // 2.) Advanced Filtering
+    // 1b.) ADVANCED FILTERING
     /* In order to implement avanced filtering, including greater than or less than for example, a standard way of adding that information in the query is to put the mongoDB operators in square brackets:
 
     /tours?duration[gte]=5
@@ -47,7 +47,20 @@ exports.getAllTours = async (req, res) => {
     // But as soon as we are using await in our find method, which returns the query object, the query will execute and come back with the documents that match the query, which makes it impossible for us to later implement sorting or pagination methods by appending them. Instead we need to save the query as an actual query without the await and then await this query in a separate line of code.
     // const query = Tour.find(queryObj);
     // If we want to use advanced filtering we parse the queryString as JSON and pass it to the find method instead of just the query object
-    const query = Tour.find(JSON.parse(queryStr));
+    let query = Tour.find(JSON.parse(queryStr));
+
+    // 2.) SORTING
+    // First we need to change the initialisation of query from const to let, because we want to chain the sorting functionality to his query. Again, this is possible because Tour.find which is a mongoDB and mongoose method, returns a query, and this query allows us to append other mongoose methods like sort() to it. Then we simply check if the sort property is defined in the URL using the dot method on the request object, and sort the query by passing the value of sort, which is in req.query.sort and can have the value of price for example, to mongoose's sort function.
+    // In case we want additional sorting critera, for example if multiple tours have the same price, we can add another criteria in the URL by passing a string. Mongoose's sort function allows multiple sort criteria simply by passing a space between the arguments. Therefore we replace the comma in the URL with split() and join().
+
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt');
+    }
+
+    // EXECUTE QUERY
     const tours = await query;
 
     // Sending JSON back and format it according to Jsend specification
