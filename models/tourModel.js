@@ -53,6 +53,8 @@ const tourSchema = new mongoose.Schema({
     type: Date,
     // Date automatically converted by MongoDB
     default: Date.now(),
+    // Excludes createdAt to be sent to the client and makes it only available for internal use
+    select: false,
   },
   startDates: [Date],
 });
