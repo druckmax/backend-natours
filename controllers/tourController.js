@@ -87,6 +87,26 @@ exports.getAllTours = async (req, res) => {
       query = query.select('-__v');
     }
 
+    // 4.) PAGINATION
+    /* Now we want to implement pagination. The query string will look something like this:
+  
+  /tours?page=2&limit=10
+
+  This means the user wants to access page 2 and limit the results per page to 10. First we get the page and the limit query values from the URL and converting them to a number by multiplying with 1. We also set a default value with the logical or operator.
+  We create the pages by skipping a certain amount of numbers. This can be calculated with (pageValue - 1) * limitValue. For example if we want page 2 and a limit of 10, the value of skip would be 10, which is 2 - 1 * 10, 10 being the value of the limit.
+  In order prevent to accidentally skip more documents that we have and are greeted with an empty response object, we use the countDocuments method on the Tour model. It returns a promise with the value of all documents, which we await. In case that the skip value is greater or equal the number of documents, we throw an error, which is immediately catched in the catch block.
+  */
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 100;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      if (skip >= numTours) throw new Error('This page does not exist');
+    }
+
     // EXECUTE QUERY
     const tours = await query;
 
@@ -100,7 +120,7 @@ exports.getAllTours = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'fail',
-      message: err,
+      message: err.message,
     });
   }
 };
