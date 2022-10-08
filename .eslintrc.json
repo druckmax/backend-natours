@@ -10,7 +10,7 @@
   "rules": {
     "prettier/prettier": "error",
     "prefer-template": "off",
-    "prefer-arrow-callback": "warn",
+    "prefer-arrow-callback": "off",
     "spaced-comment": "off",
     "no-console": "off",
     "consistent-return": "off",
