@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -58,6 +59,7 @@ const tourSchema = new mongoose.Schema(
       select: false,
     },
     startDates: [Date],
+    slug: String,
   },
   // OPTIONS OBJECT OF THE SCHEMA
   { toJSON: { virtuals: true }, toObject: { virtuals: true } }
@@ -79,6 +81,33 @@ We could have done this conversion each time after we query the data in a contro
 
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
+});
+
+// MONGOOSE MIDDLEWARE
+/* Just like Express, Mongoose also inherits the concept of middleware. There are four types of middleware: document, query, aggregate and model middleware. Just like with Express, we can use Mongoose middleware to execute code between two events. For example, each time a new document is saved to the database, we can run a function after the save command is issued but before the actual sacing of the document, as well as after the actual saving. This is the reason why Mongoose's middleware is also called pre and post hooks. A pre hook is exectued before a certain event and post afterwards.
+ */
+// DOCUMENT MIDDLEWARE
+/* Document Middleware can act on the currently processed document. Just like virtual properties, we define middleware in the schema.
+
+The document middleware can run on validate, save, remove, updateOne, deleteOne, init and create, as create fires save() hooks. It does not run on insertMany, which is done via the model middleware.
+
+In this example we use a pre hook in order to run a function before a document is actually saved to the database. This allows us to act on the data before it is passed on. Here, we use it to create slug for the current document with slugify. Quick reminder: A slug is a part of an URL which consists out of a single or multiple words, often separated by hyphens, which are easy to understand for users and search engines. A slug is basically just a string that we can put in the URL, usually based on something like the name of a document.
+
+We pass in the event-trigger 'save' to the hook, followed by a callback function, which needs to be regular function in order for the this keyword to be set to the current document.
+We create a new property called slug on the current document via this.slug, call the slugify method, in which we pass the value we want to create a slug out of. We make use of slugify's options and convert everything to lower case by setting lower to true. Remember that in order for the slug property to show up, we also need to define it in our schema.
+
+Just like Express middleware, Mongoose middleware makes use of the next() function, which is essential to call in order to call the next middleware in the stack.
+ */
+tourSchema.pre('save', function (next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
+/* The post hook additionally has access to the document object, which in case of 'save' is the document we just saved to our database. Like the name implies, post middleware functions are executed after all the pre middlewre functions finished executing. In the post hook we no longer have the this keyword, but the final document in the doc object.
+ */
+
+tourSchema.post('save', function (doc, next) {
+  console.log(doc);
+  next();
 });
 
 // Convention to put model variable with capital letter
