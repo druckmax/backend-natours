@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const validator = require('validator');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -8,9 +9,13 @@ const tourSchema = new mongoose.Schema(
       // required is called validator
       required: [true, 'A tour must have a name'],
       // unique throws an error if a tour is added that has the same name as an existing tour
+      // unique is actually not a validator
       unique: true,
       // trim removes all white space in beginning and end of string
       trim: true,
+      // min- and maxlength only works for strings
+      maxLength: [40, 'A tour name must have less or equal to 40 characters'],
+      minLength: [10, 'A tour name must have at 10 least characters'],
     },
     duration: {
       type: Number,
@@ -23,10 +28,18 @@ const tourSchema = new mongoose.Schema(
     difficulty: {
       type: String,
       required: [true, 'A tour must have a difficulty'],
+      // enum is available on all strings; let's us choose from an array of valid options
+      enum: {
+        values: ['easy', 'medium', 'difficult'],
+        message: 'Difficulty must be either easy, medium or difficult',
+      },
     },
     ratingsAverage: {
       type: Number,
       default: 4.5,
+      // min and max works for numbers and date objects
+      min: [1, 'Rating must be at least 1.0'],
+      max: [5, 'Rating cannot be larger than 5.0'],
     },
     ratingsQuantity: {
       type: Number,
@@ -36,7 +49,21 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'A tour must have a price'],
     },
-    priceDiscount: Number,
+    /* Sometimes the built in validators like required, min, max or enum are not enough. But we can build our own custom validators. A validator is actually just a simple function which either returns true or false. In this example we want to check if the priceDiscount is lower than the price itself, and when it is then an error should be omitted.
+
+      First we make use of the validate property which takes a normal function(again because of the this keyword). This function has access to the value that was put in(val). Now we check of the value of the priceDiscount is lower than the price itself. In order to add custom message we create another object, insert the message property and put the function in a property called validator. Inside the message we can make use of mongoose functionality, which is accessing the value with a weird syntax, putting it in curly braces and uppercase {VALUE}.
+
+      It is important to note that the this keyword inside the validator will only point to the current document when we are creating a new document. It will not work on update. There are workarounds for that, but they are very complicated and not worth pursuing. If we want to have such a functionality it is worth looking at some third-party libraries on npm, the most popular one being 'validator'.
+   */
+    priceDiscount: {
+      type: Number,
+      validate: {
+        message: 'Discount price ({VALUE}) should be below the regular price',
+        validator: function (val) {
+          return val < this.price;
+        },
+      },
+    },
     summary: {
       type: String,
       trim: true,
