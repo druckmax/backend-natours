@@ -137,6 +137,17 @@ tourSchema.pre(/^find/, function (next) {
 //   next();
 // });
 
+// AGGREGATION MIDDLEWARE
+/* In the query middleware we hid the secret tour, but in the aggregation pipeline, this secret tour is still used. In order to prevent this we want to exclude the secret tour from the aggregation. We could do this by exclude all the tours with secretTour field set to true in the $match stage of the aggregation. But if we have multiple aggregations, we would have to exclude it from every one in the respective $match stages. Hence, it is a good idea to exclude the secret tour on the model level like in this example.
+
+In aggreagtion middleware, the this keyword is set to the aggregation object. In this object we have access to the pipeline function, which return the array of stages we passed to the aggregation function. Now, we can simply add a $match stage to the beginning of this pipeline function and filter out all the secret tours.
+*/
+
+tourSchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+  next();
+});
+
 // Convention to put model variable with capital letter
 const Tour = mongoose.model('Tour', tourSchema);
 
