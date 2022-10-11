@@ -8,6 +8,7 @@ const DB = process.env.DATABASE.replace(
   '<PASSWORD>',
   process.env.DATABASE_PASSWORD
 );
+
 mongoose
   // When connecting to local database, URL saved in database local
   //.connect(process.env.DATABASE_LOCAL)
