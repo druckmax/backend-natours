@@ -76,7 +76,6 @@ module.exports = (err, req, res, next) => {
 };
 
 // # Error Handling in Development vs Production
-
 /* it is comming practice do distinguis between errors in development and production. During production we want to leak as little information about our errors to the client as possible, while being in the development environment we want our error messages to be as precise and meaningful as possible. This is why we implement some logic in order to send different error messages based on the current environment.
 
 We add the full error object and the error stack to the development error, while the production error just returns the status and the error message, and a console.error for developers. We wrap these errors in their own functions for a cleaner look.

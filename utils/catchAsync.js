@@ -1,3 +1,4 @@
+/* eslint-disable arrow-body-style */
 // CATCHING ERRORS IN ASYNC FUNCTIONS
 /* Instead of needing to wrap every one of our controller functions in a try-catch block, we can wrap the function itself in anotther function, which only takes care of the error handling in async functions. This helps to drastically reduce bloat in our code and let's us follow the DRY principle.
 
@@ -8,9 +9,8 @@ So it is the returned anonymous function that is called when a new tour, for exa
 Note: .catch(err => next(err)) is the same as .catch(next)
  */
 
-// eslint-disable-next-line arrow-body-style
 module.exports = (fn) => {
   return (req, res, next) => {
-    fn(req, res, next).catch((err) => next(err));
+    return fn(req, res, next).catch((err) => next(err));
   };
 };
