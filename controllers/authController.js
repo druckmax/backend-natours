@@ -58,7 +58,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   let token;
   if (
     req.headers.authorization &&
-    req.header.authorization.startsWith('bearer')
+    req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
   }
@@ -99,13 +99,13 @@ The middleware, which we call protect, consists of 4 steps.
 4. Check if user changed password after token was issued
 
 ## 1. step
-A common practice is to send a token using the http header with the request. A standard in doing so is naming the header 'authorization' and starting the value with 'bearer' for bearing or possesing the token.
+A common practice is to send a token using the http header with the request. A standard in doing so is naming the header 'authorization' and starting the value with 'Bearer' for bearing or possesing the token.
 
 ```js
-"authorization": "bearer <token comes here>"
+"authorization": "Bearer <token comes here>"
 ```
 
-Now if there is a header called authorization and if that header starts with 'bearer' we extract the token from the value string and assign it to the token variable.
+Now if there is a header called authorization and if that header starts with 'Bearer' we extract the token from the value string and assign it to the token variable.
 
 After that we again check if there is a token and if not we send a new AppError to the global error handling middleware.
 
