@@ -6,13 +6,14 @@ const userSchema = mongoose.Schema({
   name: {
     type: String,
     required: [true, 'The user needs to have a name'],
+    trim: true,
   },
   email: {
     type: String,
     required: [true, 'The user needs to have an email'],
-    unique: true,
-    lowerCase: true,
+    lowercase: true,
     validate: [validator.isEmail, 'Please provide a valid email'],
+    unique: true,
   },
   photo: {
     type: String,
@@ -21,6 +22,7 @@ const userSchema = mongoose.Schema({
     type: String,
     required: [true, 'Please provide a password'],
     minLength: 8,
+    select: false,
   },
   passwordConfirm: {
     type: String,
@@ -32,6 +34,7 @@ const userSchema = mongoose.Schema({
       },
     },
   },
+  passwordChangedAt: Date,
 });
 
 userSchema.pre('save', async function (next) {
@@ -40,6 +43,22 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
+
+userSchema.methods.correctPassword = async function (candidatePW) {
+  return await bcrypt.compare(candidatePW, this.password);
+};
+
+userSchema.methods.changedPasswordAfter = async function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    return JWTTimestamp < changedTimestamp;
+  }
+
+  return false;
+};
 
 const User = mongoose.model('User', userSchema);
 
