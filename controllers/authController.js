@@ -1,3 +1,4 @@
+/* eslint-disable arrow-body-style */
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
@@ -19,6 +20,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    role: req.body.role,
   });
 
   const token = signToken(user._id);
@@ -86,116 +88,54 @@ exports.protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-// # Protected Routes
-/* In this example we will implement protected routes using the created JSON Web Token in order to give logged in users access to protected content.
-
-We want only grant logged in users the permission to use the getAllTours route. In order to do so we can use a middleware function in the route handler, which checks if the user is logged in before calling the controller function of the route.
-
-The middleware, which we call protect, consists of 4 steps.
-
-1. Check if the token exists
-2. Validate the token (Verification)
-3. Check if the user still exists
-4. Check if user changed password after token was issued
-
-## 1. step
-A common practice is to send a token using the http header with the request. A standard in doing so is naming the header 'authorization' and starting the value with 'Bearer' for bearing or possesing the token.
-
-```js
-"authorization": "Bearer <token comes here>"
-```
-
-Now if there is a header called authorization and if that header starts with 'Bearer' we extract the token from the value string and assign it to the token variable.
-
-After that we again check if there is a token and if not we send a new AppError to the global error handling middleware.
-
-## 2. Step
-It is time to verify the token and check if someone tried to manipulate the data (changing the token's header or payload) or if the token has already expired. In order to do this we can use the verify function of jwt package. With the aim of not breaking the pattern of using async await, we first need to promsifiy the jwt.verify function, which acts synchronously if no callback is passed to it. So we need it to return a promise. We can use the promisify function from node's built in utils package. The syntax is a little bit weird since promisify wraps around only jwt.verify and the arguments are passed after the closing parantheses of the promisify. The returned promise can be awaited and holds the decoded data, the decoded payload to be more precise, of the JSON Web Token.
-
-If the verification is successful we get back an object holding the user id, amongst other information like the time stamp of the creation date and the expiration date.
-
-```js
-const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-```
-The alternative way of using the callback would look like this:
-
-```js
-const decoded = await jwt.verify(
-    token,
-    process.env.JWT_SECRET,
-    {}, // passing an empty options object to get to callback
-    (err, value) => {
-      if (err) {
-        return next(new AppError('Error', 401));
-      }
-      return value;
+exports.restrictTo = (...roles) => {
+  // roles ['admin', 'lead-guide']
+  return (req, res, next) => {
+    console.log(req.user);
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError('You do not have permission to perfrom this action', 403)
+      );
     }
-  );
+
+    next();
+  };
+};
+
+// # Authorization
+
+/* After we implemented authorisation, it is time to implement authorization. We want only certain users to interact with our database for exmaple, which is why we need to authorize, basically saying give them permission, to do so. In other words we want to verify if a certain user has the rights to interact with a certain resource.
+
+For that we need to build another middleware function, this time for restricting certain routes, for example the deleteTours route. Inside the deleteTours route we first need to pass in our protect middleware function. This will always be the first step, because we always need to check if the administrator or user is actually logged in.
+After that we call middleware named 'restrictTo' which takes the role of the user as an argument, for example 'admin'.
+
+```js
+.delete(protect, restrictTo('admin'), deleteTour);
+```
+
+We need to make sure that a role field is defined in our user schema.
+
+```js
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user',
+  }
+```
+
+Usually it is not possible to pass in arguments to a middleware function. But in our case we really need to. Therefore we need to build a wrapper function which is going to return the actual middleware function. The wrapped middleware function now gets access to the roles, which we pass in as an array using the spread operator, even after the function returned. This is a good example of a closure.
+
+Now we check if the roles array we pass in as an argument contains the role of the current user trying to access the restricted route. If not, then we want to throw an permission error (403). We get access to the user's role, because our protect middleware runs first, in which we save the current user to the req.user property, which we now can make use of.
+
+Remember to include the to object we pass into create, when creating a new user during signup.
+
+```js
+  const user = await User.create({
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+    passwordConfirm: req.body.passwordConfirm,
+    role: req.body.role,
+  });
   ```
-
-To account for JsonWebTokenErrors in our error handling behaviour in the production environment, we add a new condition in our global error handler:
-
-```js
-const handleJWTError = () =>
-  new AppError('Invalid token. Please log in again!', 401);
-
-const handleJWTExpiredError = () =>
-new AppError('Your token has expired! Please login again.', 401);
-
-module.exports = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  if ((process.env.NODE_ENV = 'development')) {
-    sendErrorDev(err, res);
-  } else if ((process.env.NODE_ENV = 'production')) {
-    // Make shallow copy of the error, because it is considered bad practice to mutate a function's argument
-    let newError = { ...err };
-
-    if (newError.name === 'CastError') newError = handleCastErrorDB(newError);
-    if (newError.code === 11000) newError = handleDuplicateFieldsDB(newError);
-    if (newError.name === 'ValidationError')
-      newError = handleValidationErrorDB(newError);
-      
-    if (newError.name === 'JsonWebTokenError') newError = handleJWTError();
-    if (newError.name === 'TokenExpiredError') newError = handleJWTExpiredError();
-  
-
-    sendErrorProd(newError, res);
-  }
-};
-```
-
-## 3. Step
-To account for the scenario that the user has been deleted during the time the token is still valid, we check if the user still exsists in the third step as an extra safety net. We therefore find the user by its id, which we can retrieve from the 'decoded' object.
-
-## 4. Step
-The same is true for the fourth step where we check whether the user recently changed the password after the token was issued. For that we create another instance method on our schema which will be available on all documents. Also we need to make sure that we have another field on the schema with the name of passwordChangedAt with the type of Date. This field will be created and updated later, whenever the user changes the password.
-
-Inside the instance method we call changedPasswordAfter, we pass in the JWT timestamp as an argument we have access to in our decoded object from validation. Now we check if the passwordChangedAt field exist on the current document. If it exists this means that the user has changed the password before.
-
-Now we can convert the Date object of this field to a timestamp and divide by 1000 to get the unit of seconds, since the timestamp of validation object ('decoded') is in seconds.
-
-Finally we compare if the JWT timestamp is smaller than the changedTimestamp, meaning that if the changedTimestamp is bigger the password has been cahnged after the token was issued.
-
-As a last step outside of our condition we want to return false by default, meaning that the user has never changed the password before.
-
-```js
-userSchema.methods.changedPasswordAfter = async function (JWTTimestamp) {
-  if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
-      10
-    );
-    return JWTTimestamp < changedTimestamp;
-  }
-
-  return false;
-};
-```
-
-Now we can call the instance method in the 'protect' middleware and pass in the JWT timestamp which we find in 'decoded.iat'(iat means issued at). If it returns true we want to issue another app error.
-
-If the code manages to travel through this series of protection, we can finally call the next() method and forward the request to the controller. Before that it useful to safe the currentUser to the request. We can create a new property for that, which we call user.
-
  */
