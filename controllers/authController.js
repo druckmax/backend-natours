@@ -1,9 +1,11 @@
 /* eslint-disable arrow-body-style */
 const { promisify } = require('util');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const sendEmail = require('../utils/email');
 
 const signToken = (id) =>
   jwt.sign({ id: id }, process.env.JWT_SECRET, {
@@ -97,45 +99,69 @@ exports.restrictTo = (...roles) => {
         new AppError('You do not have permission to perfrom this action', 403)
       );
     }
-
     next();
   };
 };
 
-// # Authorization
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+  // 1. Get user based on POSTed email
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) return next(new AppError('No user found', 404));
 
-/* After we implemented authorisation, it is time to implement authorization. We want only certain users to interact with our database for exmaple, which is why we need to authorize, basically saying give them permission, to do so. In other words we want to verify if a certain user has the rights to interact with a certain resource.
+  // 2. Generate random reset token
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
 
-For that we need to build another middleware function, this time for restricting certain routes, for example the deleteTours route. Inside the deleteTours route we first need to pass in our protect middleware function. This will always be the first step, because we always need to check if the administrator or user is actually logged in.
-After that we call middleware named 'restrictTo' which takes the role of the user as an argument, for example 'admin'.
+  // 3. Send it to user's email
+  const resetURL = `${req.protocol}://${req.get(
+    'host'
+  )}/api/v1/users/resetPassword/${resetToken}`;
 
-```js
-.delete(protect, restrictTo('admin'), deleteTour);
-```
+  const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIf you did't forget your password, please ignore this eamil! `;
 
-We need to make sure that a role field is defined in our user schema.
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Your password reset token (valid for 10 mins)',
+      message,
+    });
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passworResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
 
-```js
-  role: {
-    type: String,
-    enum: ['user', 'guide', 'lead-guide', 'admin'],
-    default: 'user',
+    return next(new AppError('There was an error sending the email!', 500));
   }
-```
-
-Usually it is not possible to pass in arguments to a middleware function. But in our case we really need to. Therefore we need to build a wrapper function which is going to return the actual middleware function. The wrapped middleware function now gets access to the roles, which we pass in as an array using the spread operator, even after the function returned. This is a good example of a closure.
-
-Now we check if the roles array we pass in as an argument contains the role of the current user trying to access the restricted route. If not, then we want to throw an permission error (403). We get access to the user's role, because our protect middleware runs first, in which we save the current user to the req.user property, which we now can make use of.
-
-Remember to include the to object we pass into create, when creating a new user during signup.
-
-```js
-  const user = await User.create({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    passwordConfirm: req.body.passwordConfirm,
-    role: req.body.role,
+  res.status(200).json({
+    status: 'success',
+    message: 'Token sent to email!',
   });
-  ```
- */
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  // 1. Get user based on token and check of the token has not yet expired
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passworResetExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400));
+  }
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+  // 3. Update changedPasswordAt property for the user as a middlware on schema
+  // 4. Log the user in, send JWT
+  const token = signToken(user._id);
+  res.status(200).json({
+    status: 'success',
+    token,
+  });
+});

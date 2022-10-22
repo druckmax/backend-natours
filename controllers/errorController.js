@@ -70,6 +70,7 @@ module.exports = (err, req, res, next) => {
     sendErrorDev(err, res);
   } else if ((process.env.NODE_ENV = 'production')) {
     // Make shallow copy of the error, because it is considered bad practice to mutate a function's argument
+    // This way of creating a shallow copy might not work for a later version of mongoose (after 5.13). This is because of the missing name property. We can fix this by using Object.assign(err)
     let newError = { ...err };
 
     if (newError.name === 'CastError') newError = handleCastErrorDB(newError);
