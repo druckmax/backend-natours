@@ -10,6 +10,7 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -88,6 +89,7 @@ app.use((req, res, next) => {
 // This is called mounting the router
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 // CREATING 404
 // If we are able to reach to following middleware, then this means that the route could not be found in previous middleware. This is why the 404-handler always needs to come in last, after all the other routes.

@@ -125,6 +125,13 @@ tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
 
+// Virutal populate
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id',
+});
+
 // MONGOOSE MIDDLEWARES
 // DOCUMENT MIDDLEWARE
 tourSchema.pre('save', function (next) {
@@ -158,65 +165,3 @@ tourSchema.pre('aggregate', function (next) {
 const Tour = mongoose.model('Tour', tourSchema);
 
 module.exports = Tour;
-
-// # Modelling locations / Geospatial data
-
-/* In this example we will embed location data into the tour model. MongoDb supports gespatial data out of the box. Geospatial data is data which describes a place's coordinates using latitude and longitude. This helps us to describe simple location points, but also complex geometries like lines or polygons.
-
-When working with geospatial data, mongoDB uss a special data format called GeoJSON. This means that when defining an object, this object no longer refers to the schema's options, but is really just an embedded object. In order for this object to be recoginzed as GeoJSON, we need two properties, namely type and coordinates. Inside this object we can now define our schema options for our fields.
-
-```js
-    startLocation: {
-      // GeoJSON
-      type: {
-        type: String,
-        default: 'Point',
-        enum: ['Point'],
-      },
-      coordinates: [Number],
-      address: String,
-      description: String,
-    },
-    locations: [
-      {
-        type: {
-          type: String,
-          default: 'Point',
-          enum: ['Point'],
-        },
-        coordinates: [Number],
-        address: String,
-        description: String,
-        day: Number,
-      },
-    ],
-  ``?`
- */
-
-// Child Referencing and Populating Data
-
-/* Creating child references is fairly easy. We need to create a field in our schema, in this case it is called 'guides'. We set it to be an array since we expect multiple user objects with the role of 'guide'. As type we define the ObjectId on the mongoose.Schema object. To reference the correct userModel we simply pass the name of the model as a string to the ref field.
-
-In order to show the referenced data in our response, we need to populate this field. Mongooose will then make another query to get the information from the referenced userModel. We have to keep that in mind as it might lower performance when we are populating a lot fields.
-
-In our case we create a convenient query middleware and add the populate method to every method that starts with find and is called on our tourModel. Populate() can simply take the name of the field that needs to be populated, or an options object, in which we can add further options, for example not showing the '__v' or 'passwordChangedAt' fields in our response.
-
-```js
-// In the tourSchema
-    guides: [
-      {
-        type: mongoose.Schema.ObjectId,
-        ref: 'User',
-      },
-    ],
-
-// Query middleware
-tourSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: 'guides',
-    select: '-__v -passwordChangedAt',
-  });
-  next();
-});
-```
- */
