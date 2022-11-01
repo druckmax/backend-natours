@@ -1,6 +1,5 @@
 const Tour = require('../models/tourModel');
-const APIFeatures = require('../utils/apiFeatures');
-const AppError = require('../utils/appError');
+// const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
 
 const catchAsync = require('../utils/catchAsync');
@@ -13,23 +12,10 @@ exports.aliasTopTours = (req, res, next) => {
   next();
 };
 
-exports.getAllTours = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
-  const tours = await features.query;
-  // Sending JSON back and format it according to Jsend specification
-  // Additionally adding results key which holds the length of the tours array as an extra
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    data: { tours },
-  });
-});
+exports.getAllTours = factory.getAll(Tour);
+exports.getTour = factory.getOne(Tour, { path: 'reviews' });
 
-exports.getTour = catchAsync(async (req, res, next) => {
+/* exports.getTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findById(req.params.id).populate('reviews');
   // Make use of our AppError class and throw 404 error when returned tour value is null or falsy
   if (!tour) return next(new AppError('No tour found with that ID', 404));
@@ -37,35 +23,10 @@ exports.getTour = catchAsync(async (req, res, next) => {
     status: 'success',
     data: tour,
   });
-});
+}); */
 
-exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body);
-  res.status(201).json({
-    status: 'success',
-    data: { tour: newTour },
-  });
-});
-
-exports.updateTour = catchAsync(async (req, res, next) => {
-  // findByIdAndUpdate to do both tasks in one function
-  // Arguments: 1. ID, 2. new data 3. options:
-  // Option1: new:true returns modified documents rather than the original one. Default is false
-  // Option2: runValidators: runs update validators. update validators validate the update operation aginst the model's schema
-  // Updates the fields that are different in the req.body, only works because we are using a PATCH request
-  const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!tour) return next(new AppError('No tour found with that ID', 404));
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour,
-    },
-  });
-});
+exports.createTour = factory.createOne(Tour);
+exports.updateTour = factory.updateOne(Tour);
 
 // exports.deleteTour = catchAsync(async (req, res, next) => {
 //   const tour = await Tour.findByIdAndDelete(req.params.id);
