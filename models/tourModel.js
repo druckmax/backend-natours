@@ -125,6 +125,8 @@ const tourSchema = new mongoose.Schema(
 // Create indexes for frequently used queries
 tourSchema.index({ price: 1, ratingsAverage: -1 });
 tourSchema.index({ slug: 1 });
+// Setting index to '2dsphere' for mongoose geospatial data
+tourSchema.index({ startLocation: '2dsphere' })
 
 // VIRTUAL PROPERTIES
 tourSchema.virtual('durationWeeks').get(function () {
