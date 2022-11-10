@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
@@ -14,14 +15,21 @@ const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 
+// Intialize pug engine, pug needs to be installed first
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
+
 //// 1) MIDDLEWARES
 // Middleware: Function that can modifiy the incoming requesst data
-// Third party middleware: Morgan is a logger middleware
+
+// Serving static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Set security HTTP headers
 app.use(helmet());
 
 // Development logging
+// Third party middleware: Morgan is a logger middleware
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
@@ -76,8 +84,6 @@ app.use(
     ],
   })
 );
-// Serving static files
-app.use(express.static(`${__dirname}/public`));
 
 // Custom middleware(just for testing)
 app.use((req, res, next) => {
@@ -86,6 +92,12 @@ app.use((req, res, next) => {
 });
 
 //// 2) ROUTES
+app.get('/', (req, res) => {
+  res.status(200).render('base', {
+    tour: 'The Forst Hiker',
+    user: 'Jonas',
+  });
+});
 // This is called mounting the router
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
