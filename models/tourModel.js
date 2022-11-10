@@ -40,7 +40,7 @@ const tourSchema = new mongoose.Schema(
       min: [1, 'Rating must be at least 1.0'],
       max: [5, 'Rating cannot be larger than 5.0'],
       // Rounding the ratings
-      set: val => Math.round(val * 10) / 10
+      set: (val) => Math.round(val * 10) / 10,
     },
     ratingsQuantity: {
       type: Number,
@@ -126,7 +126,7 @@ const tourSchema = new mongoose.Schema(
 tourSchema.index({ price: 1, ratingsAverage: -1 });
 tourSchema.index({ slug: 1 });
 // Setting index to '2dsphere' for mongoose geospatial data
-tourSchema.index({ startLocation: '2dsphere' })
+tourSchema.index({ startLocation: '2dsphere' });
 
 // VIRTUAL PROPERTIES
 tourSchema.virtual('durationWeeks').get(function () {
@@ -164,10 +164,10 @@ tourSchema.pre(/^find/, function (next) {
 
 // AGGREGATION MIDDLEWARE
 
-tourSchema.pre('aggregate', function (next) {
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  next();
-});
+// tourSchema.pre('aggregate', function (next) {
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//   next();
+// });
 
 // Convention to put model variable with capital letter
 const Tour = mongoose.model('Tour', tourSchema);

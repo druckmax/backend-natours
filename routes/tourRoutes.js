@@ -11,6 +11,7 @@ const {
   getTourStats,
   getMonthlyPlan,
   getToursWithin,
+  getDistances,
 } = require('../controllers/tourController');
 
 const router = express.Router();
@@ -28,7 +29,11 @@ router
 // tours-within?distance=233&center=-40,45&unit=mi
 // so we get something like this ( which is a standard)
 // tours-within/233/center/-40,45/unit/mi
-router.route('/tours-within/:distance/center/:latlng/unit/:unit').get(getToursWithin)
+router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(getToursWithin);
+
+router.route('/distances/:latlng/unit/:unit').get(getDistances);
 
 router
   .route('/')
