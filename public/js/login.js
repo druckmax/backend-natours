@@ -1,29 +1,49 @@
 /* eslint-disable */
-const login = async (email, password) => {
+import { showAlert } from './alerts.js';
+
+export const login = async (email, password) => {
   try {
-    const res = await axios({
+    const request = await fetch('http://localhost:5000/api/v1/users/login', {
       method: 'POST',
-      url: 'http://localhost:5000/api/v1/users/login',
-      data: {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         email,
         password,
-      },
+      }),
     });
+    const res = await request.json();
 
-    if (res.data.status === 'success') {
-      alert('Logged in successfully!');
+    if (res.status === 'success') {
+      showAlert('success', 'Logged in successfully!');
       window.setTimeout(() => {
         location.assign('/');
       }, 1500);
+    } else {
+      console.log(res);
+      throw new Error(res.message);
     }
   } catch (err) {
-    alert(err.response.data.message);
+    console.log('test');
+    showAlert('error', err.message);
   }
 };
 
-document.querySelector('.form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  login(email, password);
-});
+export const logout = async () => {
+  try {
+    const res = await fetch('http://localhost:5000/api/v1/users/logout', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) throw new Error(res.message);
+
+    window.location.reload(true);
+  } catch (err) {
+    showAlert('error', err.message);
+  }
+};

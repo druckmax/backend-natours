@@ -70,6 +70,10 @@ exports.login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+exports.logout = (req, res) => {
+  res.clearCookie('jwt').status(200).json({ status: 'success' });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
   //1. Check if token exists
   let token;
@@ -78,7 +82,10 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
+
   if (!token)
     return next(
       new AppError('You are not logged in. Please log in to get access', 401)
@@ -100,6 +107,32 @@ exports.protect = catchAsync(async (req, res, next) => {
   }
   // Grant access to protected route
   req.user = currentUser;
+  next();
+});
+
+// Only for rendered pages, no errors!
+exports.isLoggedIn = catchAsync(async (req, res, next) => {
+  if (req.cookies.jwt) {
+    //2. Validate the token (Verification)
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET
+    );
+
+    //3. Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return next();
+    }
+    //4. Check if user changed password
+    if (currentUser.changedPasswordAfter(decoded.iat)) {
+      return next();
+    }
+    // If code reaches here, then there is a logged in user
+    /* Each pug template has access to res.locals and whatever we put there will be a variable accessible in the pug tempalte. So we store the current user to the user property of res.locals. */
+    res.locals.user = currentUser;
+    return next();
+  }
   next();
 });
 
