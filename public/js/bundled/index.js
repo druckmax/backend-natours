@@ -532,18 +532,46 @@ function hmrAcceptRun(bundle, id) {
 
 },{}],"4uyBp":[function(require,module,exports) {
 /* eslint-disbale */ var _loginJs = require("./login.js");
+var _updateSettingsJs = require("./updateSettings.js");
 // DOM ELEMENTS
 const loginForm = document.querySelector(".form--login");
 const logOutBtn = document.querySelector(".nav__el--logout");
+const userDataForm = document.querySelector(".form-user-data");
+const userPasswordForm = document.querySelector(".form-user-password");
 if (loginForm) loginForm.addEventListener("submit", (e)=>{
     e.preventDefault();
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     (0, _loginJs.login)(email, password);
 });
+if (userDataForm) userDataForm.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    (0, _updateSettingsJs.updateSettings)({
+        name,
+        email
+    }, "data");
+});
+if (userPasswordForm) userPasswordForm.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    document.querySelector(".btn--save-password").textContent = "Updating...";
+    const passwordCurrent = document.getElementById("password-current").value;
+    const password = document.getElementById("password").value;
+    const passwordConfirm = document.getElementById("password-confirm").value;
+    await (0, _updateSettingsJs.updateSettings)({
+        passwordCurrent,
+        password,
+        passwordConfirm
+    }, "password");
+    document.querySelector(".btn--save-password").textContent = "Save password";
+    document.getElementById("password-current").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("password-confirm").value = "";
+});
 if (logOutBtn) logOutBtn.addEventListener("click", (0, _loginJs.logout));
 
-},{"./login.js":"qZEOz"}],"qZEOz":[function(require,module,exports) {
+},{"./login.js":"qZEOz","./updateSettings.js":"28JcJ"}],"qZEOz":[function(require,module,exports) {
 /* eslint-disable */ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "login", ()=>login);
@@ -639,6 +667,35 @@ exports.export = function(dest, destName, get) {
     });
 };
 
-},{}]},["jc1EJ","4uyBp"], "4uyBp", "parcelRequire11c7")
+},{}],"28JcJ":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "updateSettings", ()=>updateSettings);
+var _alertsJs = require("./alerts.js");
+const updateSettings = async (data, type)=>{
+    try {
+        const endpoint = type === "data" ? "updateMe" : "updateMyPassword";
+        const request = await fetch(`http://localhost:5000/api/v1/users/${endpoint}`, {
+            method: "PATCH",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
+        const res = await request.json();
+        // console.log(JSON.stringify(dt));
+        if (res.status === "success") (0, _alertsJs.showAlert)("success", `${type.toUpperCase()} successfully updated!`);
+        else {
+            console.log(res);
+            throw new Error(res.message);
+        }
+    } catch (err) {
+        console.log("test");
+        (0, _alertsJs.showAlert)("error", err.message);
+    }
+};
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"5Birt","./alerts.js":"j4hQk"}]},["jc1EJ","4uyBp"], "4uyBp", "parcelRequire11c7")
 
 //# sourceMappingURL=index.js.map
