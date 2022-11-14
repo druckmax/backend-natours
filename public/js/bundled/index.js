@@ -533,7 +533,7 @@ function hmrAcceptRun(bundle, id) {
 },{}],"4uyBp":[function(require,module,exports) {
 /* eslint-disbale */ var _loginJs = require("./login.js");
 // DOM ELEMENTS
-const loginForm = document.querySelector(".form");
+const loginForm = document.querySelector(".form--login");
 const logOutBtn = document.querySelector(".nav__el--logout");
 if (loginForm) loginForm.addEventListener("submit", (e)=>{
     e.preventDefault();
