@@ -7,6 +7,9 @@
   "plugins": [
     "prettier"
   ],
+  "parserOptions": {
+    "sourceType": "module"
+  },
   "rules": {
     "prettier/prettier": "error",
     "prefer-template": "off",

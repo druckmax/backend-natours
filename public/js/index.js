@@ -1,4 +1,4 @@
-/* eslint-disbale */
+/* eslint-disable */
 import { login, logout } from './login.js';
 import { updateSettings } from './updateSettings.js';
 
@@ -18,11 +18,14 @@ if (loginForm) {
 }
 
 if (userDataForm) {
-  userDataForm.addEventListener('submit', (e) => {
+  userDataForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
-    updateSettings({ name, email }, 'data');
+    const photo = document.getElementById('photo').files[0];
+    await updateSettings({ name, email, photo }, 'data');
+
+    location.reload();
   });
 }
 

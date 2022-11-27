@@ -22,11 +22,9 @@ export const login = async (email, password) => {
         location.assign('/');
       }, 1500);
     } else {
-      console.log(res);
       throw new Error(res.message);
     }
   } catch (err) {
-    console.log('test');
     showAlert('error', err.message);
   }
 };

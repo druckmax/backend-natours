@@ -1,12 +1,10 @@
 /* eslint-disable */
-// DOM ELEMENTS
+// DOM ELEMENT
 const mapBox = document.getElementById('map');
 // DELEGATION
 
 if (mapBox) {
   const locations = JSON.parse(mapBox.dataset.locations);
-
-  console.log(locations);
 
   mapboxgl.accessToken =
     'pk.eyJ1IjoiZHJ1Y2ttYXgiLCJhIjoiY2xhYmp3MW44MDE2YTNxanRjMWE4ZnI3YSJ9.pfO2z4vAN2ZKHgg9PwESYA';

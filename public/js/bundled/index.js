@@ -531,7 +531,7 @@ function hmrAcceptRun(bundle, id) {
 }
 
 },{}],"4uyBp":[function(require,module,exports) {
-/* eslint-disbale */ var _loginJs = require("./login.js");
+/* eslint-disable */ var _loginJs = require("./login.js");
 var _updateSettingsJs = require("./updateSettings.js");
 // DOM ELEMENTS
 const loginForm = document.querySelector(".form--login");
@@ -544,14 +544,17 @@ if (loginForm) loginForm.addEventListener("submit", (e)=>{
     const password = document.getElementById("password").value;
     (0, _loginJs.login)(email, password);
 });
-if (userDataForm) userDataForm.addEventListener("submit", (e)=>{
+if (userDataForm) userDataForm.addEventListener("submit", async (e)=>{
     e.preventDefault();
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
-    (0, _updateSettingsJs.updateSettings)({
+    const photo = document.getElementById("photo").files[0];
+    await (0, _updateSettingsJs.updateSettings)({
         name,
-        email
+        email,
+        photo
     }, "data");
+    location.reload();
 });
 if (userPasswordForm) userPasswordForm.addEventListener("submit", async (e)=>{
     e.preventDefault();
@@ -596,12 +599,8 @@ const login = async (email, password)=>{
             window.setTimeout(()=>{
                 location.assign("/");
             }, 1500);
-        } else {
-            console.log(res);
-            throw new Error(res.message);
-        }
+        } else throw new Error(res.message);
     } catch (err) {
-        console.log("test");
         (0, _alertsJs.showAlert)("error", err.message);
     }
 };
@@ -668,30 +667,36 @@ exports.export = function(dest, destName, get) {
 };
 
 },{}],"28JcJ":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+/* eslint-disable */ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "updateSettings", ()=>updateSettings);
 var _alertsJs = require("./alerts.js");
 const updateSettings = async (data, type)=>{
     try {
         const endpoint = type === "data" ? "updateMe" : "updateMyPassword";
-        const request = await fetch(`http://localhost:5000/api/v1/users/${endpoint}`, {
-            method: "PATCH",
-            headers: {
+        let options = {
+            method: "PATCH"
+        };
+        if (type === "data") {
+            const formData = new FormData();
+            formData.append("name", data.name);
+            formData.append("email", data.email);
+            formData.append("photo", data.photo);
+            options.body = formData;
+        } else {
+            options.headers = {
                 Accept: "application/json",
                 "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        });
+            };
+            options.body = JSON.stringify(data);
+        }
+        const request = await fetch(`http://localhost:5000/api/v1/users/${endpoint}`, options);
         const res = await request.json();
         // console.log(JSON.stringify(dt));
         if (res.status === "success") (0, _alertsJs.showAlert)("success", `${type.toUpperCase()} successfully updated!`);
-        else {
-            console.log(res);
-            throw new Error(res.message);
-        }
+        else // console.log(res);
+        throw new Error(res.message);
     } catch (err) {
-        console.log("test");
         (0, _alertsJs.showAlert)("error", err.message);
     }
 };
