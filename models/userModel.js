@@ -18,6 +18,7 @@ const userSchema = mongoose.Schema({
   },
   photo: {
     type: String,
+    default: 'default.jpg',
   },
   role: {
     type: String,
@@ -80,6 +81,8 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
       this.passwordChangedAt.getTime() / 1000,
       10
     );
+    console.log(JWTTimestamp);
+    console.log(changedTimestamp);
     return JWTTimestamp < changedTimestamp;
   }
 
@@ -94,7 +97,7 @@ userSchema.methods.createPasswordResetToken = function () {
     .update(resetToken)
     .digest('hex');
 
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetExpires = Date.now() + 90 * 60 * 1000;
 
   return resetToken;
 };
