@@ -701,6 +701,6 @@ const updateSettings = async (data, type)=>{
     }
 };
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"5Birt","./alerts.js":"j4hQk"}]},["jc1EJ","4uyBp"], "4uyBp", "parcelRequire11c7")
+},{"./alerts.js":"j4hQk","@parcel/transformer-js/src/esmodule-helpers.js":"5Birt"}]},["jc1EJ","4uyBp"], "4uyBp", "parcelRequire11c7")
 
 //# sourceMappingURL=index.js.map
